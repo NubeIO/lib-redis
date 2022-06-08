@@ -48,7 +48,7 @@ func New(config *Config) (Client, error) {
 
 	_, err := redis.ParseURL(addr)
 	if err != nil {
-		panic(err)
+		//panic(err)
 	}
 
 	c := redis.NewClient(&redis.Options{
