@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/NubeIO/lib-redis/redis"
 	"github.com/spf13/cobra"
@@ -40,15 +39,14 @@ func initRedis() redis.Client {
 
 func runRoot(cmd *cobra.Command, args []string) {
 	client := initRedis()
-	messages := make(chan string)
+	messages := make(chan string, 100)
 	go func() {
 		msg := <-messages
 		user := &User{}
-		if err := json.Unmarshal([]byte(msg), user); err != nil {
-		} else {
-			fmt.Println("Received message from " + user.Name + " channel.")
-			fmt.Printf("%+v\n", user)
-		}
+		err := client.Decode(msg, user)
+		fmt.Println(err)
+		fmt.Println(user.Name)
+
 	}()
 	fmt.Println("subscribing to channel:", channel)
 	client.Subscribe(channel, messages)

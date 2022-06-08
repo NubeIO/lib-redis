@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -21,6 +22,10 @@ type Client interface {
 	Publish(channel string, message []byte) error
 	// Subscribe into Pub/Sub
 	Subscribe(channel string, notifyTo chan string)
+	// Encode json encode
+	Encode(model interface{}) ([]byte, error)
+	// Decode json decode
+	Decode(msg string, model interface{}) error
 }
 
 type client struct {
@@ -34,10 +39,12 @@ func New(config Config) (Client, error) {
 	if config.Addr != "" {
 		addr = config.Addr
 	}
+
 	c := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: config.Pass,
-		DB:       10,
+		Addr:         addr,
+		PoolSize:     10,
+		MinIdleConns: 10,
+		DB:           10,
 	})
 	cli := client{
 		rc: c,
@@ -58,8 +65,10 @@ func (init *client) Publish(channel string, message []byte) error {
 // Subscribe subscribe to listen messages from a channel
 func (init *client) Subscribe(channel string, notifyTo chan string) {
 	sub := init.rc.Subscribe(ctx, channel)
-	ch := sub.Channel()
-	for msg := range ch {
+	for {
+		msg, err := sub.ReceiveMessage(ctx)
+		if err != nil {
+		}
 		notifyTo <- msg.Payload
 	}
 }
@@ -83,4 +92,18 @@ func (init *client) GetRedisPrefixedKey(key string) string {
 		return init.KeyPrefix + ":" + key
 	}
 	return key
+}
+
+func (init *client) Encode(model interface{}) ([]byte, error) {
+	return json.Marshal(model)
+
+}
+
+func (init *client) Decode(msg string, model interface{}) error {
+	if err := json.Unmarshal([]byte(msg), model); err != nil {
+		return err
+	} else {
+		return nil
+	}
+
 }

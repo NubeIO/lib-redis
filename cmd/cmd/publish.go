@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -21,15 +20,21 @@ var clientFlags struct {
 
 func pub(cmd *cobra.Command, args []string) {
 	client := initRedis()
-	payload, err := json.Marshal(User{Name: "aidan"})
-	if err != nil {
-		panic(err)
+
+	for i := 1; i < 5; i++ {
+		name := fmt.Sprintf("hey %d", i)
+		payload, err := client.Encode(User{Name: name})
+		fmt.Println(name)
+		if err != nil {
+			panic(err)
+		}
+		err = client.Publish(channel, payload)
+		fmt.Println(err)
+		if err != nil {
+			return
+		}
 	}
-	err = client.Publish(channel, payload)
-	fmt.Println(err)
-	if err != nil {
-		return
-	}
+
 }
 
 func init() {
