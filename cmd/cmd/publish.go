@@ -25,7 +25,7 @@ func pub(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	err = client.Publish(ctx, channel, payload)
+	err = client.Publish(channel, payload)
 	fmt.Println(err)
 	if err != nil {
 		return

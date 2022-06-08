@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/NubeIO/lib-redis/nredis"
+	"github.com/NubeIO/lib-redis/redis"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -24,7 +23,6 @@ var rootFlags struct {
 	wipeDb bool
 }
 
-var ctx = context.Background()
 var channel = "test"
 
 type User struct {
@@ -32,8 +30,8 @@ type User struct {
 	Email string `json:"email"`
 }
 
-func initRedis() nredis.Client {
-	client, err := nredis.InitClient(nredis.Config{})
+func initRedis() redis.Client {
+	client, err := redis.New(redis.Config{})
 	if err != nil {
 		return nil
 	}
@@ -53,7 +51,7 @@ func runRoot(cmd *cobra.Command, args []string) {
 		}
 	}()
 	fmt.Println("subscribing to channel:", channel)
-	client.Subscribe(ctx, channel, messages)
+	client.Subscribe(channel, messages)
 }
 
 func Execute() {
