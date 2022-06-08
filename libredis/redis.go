@@ -1,4 +1,4 @@
-package redis
+package libredis
 
 import (
 	"context"
@@ -19,7 +19,7 @@ var ctx = context.Background()
 type Client interface {
 	CheckHealth() (string, error)
 	// Publish into Pub/Sub
-	Publish(channel string, message []byte) error
+	Publish(channel string, message interface{}) error
 	// Subscribe into Pub/Sub
 	Subscribe(channel string, notifyTo chan string) error
 	// Encode json encode
@@ -39,8 +39,8 @@ type client struct {
 	rc        *redis.Client
 }
 
-// New get a redis wrapper instance
-func New(config Config) (Client, error) {
+// New get redis wrapper instance
+func New(config *Config) (Client, error) {
 	addr := "localhost:6379"
 	if config.Addr != "" {
 		addr = config.Addr
@@ -63,14 +63,18 @@ func New(config Config) (Client, error) {
 	return &cli, nil
 }
 
-// CheckHealth ping redis server
+// CheckHealth ping server
 func (init *client) CheckHealth() (string, error) {
 	return init.rc.Ping(ctx).Result()
 }
 
 // Publish message into a channel
-func (init *client) Publish(channel string, message []byte) error {
-	return init.rc.Publish(ctx, channel, message).Err()
+func (init *client) Publish(channel string, message interface{}) error {
+	enc, err := init.Encode(message)
+	if err != nil {
+		return err
+	}
+	return init.rc.Publish(ctx, channel, enc).Err()
 }
 
 // Subscribe subscribe to listen messages from a channel

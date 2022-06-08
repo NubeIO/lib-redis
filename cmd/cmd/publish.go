@@ -22,11 +22,7 @@ func pub(cmd *cobra.Command, args []string) {
 	client := initRedis()
 	for i := 1; i < 5; i++ {
 		name := fmt.Sprintf("hey %d", i)
-		payload, err := client.Encode(User{Name: name})
-		if err != nil {
-			panic(err)
-		}
-		err = client.Publish(channel, payload)
+		err := client.Publish(channel, User{Name: name})
 		if err != nil {
 			return
 		}

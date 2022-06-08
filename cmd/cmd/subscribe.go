@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/NubeIO/lib-redis/redis"
+	"github.com/NubeIO/lib-redis/libredis"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -29,8 +29,8 @@ type User struct {
 	Email string `json:"email"`
 }
 
-func initRedis() redis.Client {
-	client, err := redis.New(redis.Config{})
+func initRedis() libredis.Client {
+	client, err := libredis.New(&libredis.Config{})
 	if err != nil {
 		return nil
 	}
