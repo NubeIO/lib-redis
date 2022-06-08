@@ -39,14 +39,14 @@ func initRedis() redis.Client {
 
 func runRoot(cmd *cobra.Command, args []string) {
 	client := initRedis()
-	messages := make(chan string, 100)
+	messages := make(chan string)
 	go func() {
-		msg := <-messages
-		user := &User{}
-		err := client.Decode(msg, user)
-		fmt.Println(err)
-		fmt.Println(user.Name)
-
+		for {
+			msg := <-messages
+			user := &User{}
+			err := client.Decode(msg, user)
+			fmt.Println(user.Name, err)
+		}
 	}()
 	fmt.Println("subscribing to channel:", channel)
 	client.Subscribe(channel, messages)

@@ -21,11 +21,17 @@ type Client interface {
 	// Publish into Pub/Sub
 	Publish(channel string, message []byte) error
 	// Subscribe into Pub/Sub
-	Subscribe(channel string, notifyTo chan string)
+	Subscribe(channel string, notifyTo chan string) error
 	// Encode json encode
 	Encode(model interface{}) ([]byte, error)
 	// Decode json decode
 	Decode(msg string, model interface{}) error
+
+	WipeDB() error
+
+	Close() error
+
+	GetPrefixedKey(key string) string
 }
 
 type client struct {
@@ -40,11 +46,16 @@ func New(config Config) (Client, error) {
 		addr = config.Addr
 	}
 
+	_, err := redis.ParseURL(addr)
+	if err != nil {
+		panic(err)
+	}
+
 	c := redis.NewClient(&redis.Options{
 		Addr:         addr,
 		PoolSize:     10,
 		MinIdleConns: 10,
-		DB:           10,
+		DB:           0,
 	})
 	cli := client{
 		rc: c,
@@ -63,14 +74,16 @@ func (init *client) Publish(channel string, message []byte) error {
 }
 
 // Subscribe subscribe to listen messages from a channel
-func (init *client) Subscribe(channel string, notifyTo chan string) {
+func (init *client) Subscribe(channel string, notifyTo chan string) error {
 	sub := init.rc.Subscribe(ctx, channel)
 	for {
 		msg, err := sub.ReceiveMessage(ctx)
 		if err != nil {
+			return err
 		}
 		notifyTo <- msg.Payload
 	}
+
 }
 
 // WipeDB wipes the db.
@@ -87,7 +100,7 @@ func (init *client) Close() error {
 	return init.rc.Close()
 }
 
-func (init *client) GetRedisPrefixedKey(key string) string {
+func (init *client) GetPrefixedKey(key string) string {
 	if init.KeyPrefix != "" {
 		return init.KeyPrefix + ":" + key
 	}
