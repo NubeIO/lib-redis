@@ -25,7 +25,7 @@ type Client interface {
 
 type client struct {
 	KeyPrefix string
-	C         *redis.Client
+	rc        *redis.Client
 }
 
 // New get a redis wrapper instance
@@ -34,41 +34,48 @@ func New(config Config) (Client, error) {
 	if config.Addr != "" {
 		addr = config.Addr
 	}
-
 	c := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: config.Pass,
 		DB:       10,
 	})
-
 	cli := client{
-		C: c,
+		rc: c,
 	}
 	return &cli, nil
 }
 
 // CheckHealth ping redis server
 func (init *client) CheckHealth() (string, error) {
-	return init.C.Ping(ctx).Result()
+	return init.rc.Ping(ctx).Result()
 }
 
 // Publish message into a channel
 func (init *client) Publish(channel string, message []byte) error {
-	return init.C.Publish(ctx, channel, message).Err()
+	return init.rc.Publish(ctx, channel, message).Err()
 }
 
 // Subscribe subscribe to listen messages from a channel
 func (init *client) Subscribe(channel string, notifyTo chan string) {
-	sub := init.C.Subscribe(ctx, channel)
+	sub := init.rc.Subscribe(ctx, channel)
 	ch := sub.Channel()
 	for msg := range ch {
 		notifyTo <- msg.Payload
 	}
 }
 
+// WipeDB wipes the db.
+func (init *client) WipeDB() error {
+	err := init.rc.FlushDB(ctx).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Close terminates any storage connections gracefully.
 func (init *client) Close() error {
-	return init.C.Close()
+	return init.rc.Close()
 }
 
 func (init *client) GetRedisPrefixedKey(key string) string {
